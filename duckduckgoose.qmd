@@ -1,0 +1,22 @@
+---
+title: Fun with Duckdb
+format: html
+juypter: python
+---
+
+```{python}
+import pandas as pd
+import numpy as np
+import duckdb
+```
+# Fire Up Duckdb
+
+```{python}
+con = duckdb.connect(database = "wso.duckdb", read_only = False)
+df = con.execute("SELECT * FROM wso").df()
+df.dtypes
+```
+
+```{python}
+df.describe()
+```
