@@ -1,0 +1,296 @@
+---
+title: New and Improved Solar Polar Analysis
+jupyter: python3
+date: 2024-06-04
+author: David J Jackson
+format: html
+---
+
+# Load the libraries
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import STL
+from scipy.signal import find_peaks
+import os
+
+# Load the data from the CSV file
+file_path = './WSO_fixed.csv'
+data = pd.read_csv(file_path)
+
+# Display the first few rows of the dataset
+data.head()
+```
+# Identify data types of each column
+```{python}
+data_types = data.dtypes
+data_types
+```
+
+# Check for missing values in the dataset
+```{python}
+missing_values = data.isnull().sum()
+missing_values
+```
+# Replace the non-numeric 'XXX' with a suitable placeholder (e.g., NaN).
+The unique values in the g_n column reveal the presence of an entry 'XXX', which is non-numeric. This is likely why the entire column was imported as a string. To proceed, we should handle this non-numeric value and then convert the column to a numeric type.
+
+```{python}
+# data.columns
+# List the unique values in the g_n column
+unique_g_n_values = data['g_n'].unique()
+unique_g_n_values
+```
+# Replace the non-numeric 'XXX' with a suitable placeholder (e.g., NaN).
+The unique values in the g_n column reveal the presence of an entry 'XXX', which is non-numeric. This is likely why the entire column was imported as a string. To proceed, we should handle this non-numeric value and then convert the column to a numeric type.
+```{python}
+# Find the rows where g_n contains non-numeric values
+non_numeric_rows = data[pd.to_numeric(data['g_n'], errors='coerce').isna()]
+
+# Display the first five rows causing the problem
+non_numeric_rows.head()
+```
+```{python}
+# Replace 'XXX' with NaN in the affected columns
+data.replace('XXX', pd.NA, inplace=True)
+
+# Convert the affected columns to numeric types
+data['g_n'] = pd.to_numeric(data['g_n'], errors='coerce')
+data['g_s'] = pd.to_numeric(data['g_s'], errors='coerce')
+data['R_n'] = pd.to_numeric(data['R_n'], errors='coerce')
+data['R_s'] = pd.to_numeric(data['R_s'], errors='coerce')
+
+# Check the data types and display the first few rows to confirm the changes
+data_types_updated = data.dtypes
+data_head_updated = data.head()
+
+data_types_updated, data_head_updated
+```
+```{python}
+summary_statistics = data.describe()
+summary_statistics
+```
+```{python}
+# Calculate the Interquartile Range (IQR) for each numeric column
+Q1 = data['g_n'].quantile(0.25)
+Q3 = data['g_n'].quantile(0.75)
+IQR = Q3 - Q1
+IQR
+```
+```{python}
+Q1 = data['g_s'].quantile(0.25)
+Q3 = data['g_s'].quantile(0.75)
+IQR = Q3 - Q1
+IQR
+```
+# The skewness and kurtosis for each numeric column are as follows:
+The distributions of all the numeric columns are relatively symmetrical, with skewness values close to zero. The kurtosis values are all negative, indicating that the distributions are flatter than the normal distribution, with lighter tails. This suggests that the data points are more evenly spread out across the range, with fewer extreme values (outliers) than in a normal distribution.
+
+```{python}
+# Calculate skewness and kurtosis for each numeric column
+skewness = data.skew(numeric_only=True)
+kurtosis = data.kurtosis(numeric_only=True)
+
+# Combine skewness and kurtosis into a single DataFrame for better readability
+skewness_kurtosis = pd.DataFrame({'Skewness': skewness, 'Kurtosis': kurtosis})
+
+# import ace_tools as tools; tools.display_dataframe_to_user(name="Skewness and Kurtosis", dataframe=skewness_kurtosis)
+
+skewness_kurtosis
+```
+# Histograms for each numeric column to visualize their distributions.
+```{python}
+# Create histograms for each numeric column
+numeric_columns = ['g_n', 'g_s', 'a', 'R_n', 'R_s', 'Rr']
+
+plt.figure(figsize=(15, 10))
+
+for i, col in enumerate(numeric_columns, 1):
+    plt.subplot(2, 3, i)
+    plt.hist(data[col].dropna(), bins=30, edgecolor='black')
+    plt.title(f'Histogram of {col}')
+    plt.xlabel(col)
+    plt.ylabel('Frequency')
+
+plt.tight_layout()
+plt.show()
+```
+# Next, I'll create boxplots for each numeric column to identify potential outliers.
+Observations:
+The histograms confirm that the distributions of the numeric columns are relatively symmetrical, aligning with the skewness values close to zero.
+The boxplots show that the data is generally spread out with some potential outliers, which is consistent with the negative kurtosis values indicating flatter distributions.
+```{python}
+# Create boxplots for each numeric column
+plt.figure(figsize=(15, 10))
+
+for i, col in enumerate(numeric_columns, 1):
+    plt.subplot(2, 3, i)
+    plt.boxplot(data[col].dropna(), vert=False)
+    plt.title(f'Boxplot of {col}')
+    plt.xlabel(col)
+
+plt.tight_layout()
+plt.show()
+```
+# Let's proceed with a correlation analysis to examine the relationships between the numeric columns.
+
+High Positive Correlations:
+a and Rr (0.992)
+R_n and Rr (0.985)
+a and R_n (0.978)
+High Negative Correlations:
+R_s and Rr (-0.987)
+R_s and a (-0.980)
+g_s and a (-0.948)
+
+```{python}
+# Calculate the correlation matrix for the numeric columns
+correlation_matrix = data[numeric_columns].corr()
+
+# Display the correlation matrix as a heatmap
+plt.figure(figsize=(10, 8))
+plt.imshow(correlation_matrix, cmap='coolwarm', interpolation='none')
+plt.colorbar()
+plt.xticks(range(len(correlation_matrix.columns)), correlation_matrix.columns, rotation=90)
+plt.yticks(range(len(correlation_matrix.columns)), correlation_matrix.columns)
+plt.title('Correlation Matrix Heatmap')
+plt.show()
+
+# display_dataframe_to_user(name="Correlation Matrix", dataframe=correlation_matrix)
+
+correlation_matrix
+```
+# Create scatter plots for high positive correlations
+```{python}
+plt.figure(figsize=(15, 10))
+
+# Scatter plot for 'a' and 'Rr'
+plt.subplot(2, 2, 1)
+plt.scatter(data['a'], data['Rr'], alpha=0.5)
+plt.title('Scatter Plot of a vs Rr')
+plt.xlabel('a')
+plt.ylabel('Rr')
+
+# Scatter plot for 'R_n' and 'Rr'
+plt.subplot(2, 2, 2)
+plt.scatter(data['R_n'], data['Rr'], alpha=0.5)
+plt.title('Scatter Plot of R_n vs Rr')
+plt.xlabel('R_n')
+plt.ylabel('Rr')
+
+# Scatter plot for 'a' and 'R_n'
+plt.subplot(2, 2, 3)
+plt.scatter(data['a'], data['R_n'], alpha=0.5)
+plt.title('Scatter Plot of a vs R_n')
+plt.xlabel('a')
+plt.ylabel('R_n')
+
+plt.tight_layout()
+plt.show()
+```
+```{python}
+# Create scatter plots for high negative correlations
+plt.figure(figsize=(15, 10))
+
+# Scatter plot for 'R_s' and 'Rr'
+plt.subplot(2, 2, 1)
+plt.scatter(data['R_s'], data['Rr'], alpha=0.5)
+plt.title('Scatter Plot of R_s vs Rr')
+plt.xlabel('R_s')
+plt.ylabel('Rr')
+
+# Scatter plot for 'R_s' and 'a'
+plt.subplot(2, 2, 2)
+plt.scatter(data['R_s'], data['a'], alpha=0.5)
+plt.title('Scatter Plot of R_s vs a')
+plt.xlabel('R_s')
+plt.ylabel('a')
+
+# Scatter plot for 'g_s' and 'a'
+plt.subplot(2, 2, 3)
+plt.scatter(data['g_s'], data['a'], alpha=0.5)
+plt.title('Scatter Plot of g_s vs a')
+plt.xlabel('g_s')
+plt.ylabel('a')
+
+plt.tight_layout()
+plt.show()
+```
+```{python}
+# Calculate the lower and upper bounds for detecting outliers
+Q1 = data[numeric_columns].quantile(0.25)
+Q3 = data[numeric_columns].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Identify outliers for each column
+outliers = pd.DataFrame()
+for col in numeric_columns:
+    outliers[col] = data[(data[col] < lower_bound[col]) | (data[col] > upper_bound[col])][col]
+
+
+
+outliers
+```
+# Let's proceed with a time series analysis to explore trends over time using the Ymd and hhmm columns.
+```{python}
+# Convert 'Ymd' and 'hhmm' columns to a single datetime column
+data['datetime'] = pd.to_datetime(data['Ymd'] + ' ' + data['hhmm'])
+
+# Set the datetime column as the index
+data.set_index('datetime', inplace=True)
+
+# Display the first few rows to confirm the changes
+data.head()
+```
+# Next, let's plot the time series for key numeric variables (g_n, g_s, a, R_n, R_s, Rr) to identify trends and patterns over time.
+```{python}
+# Plot the time series for key numeric variables
+plt.figure(figsize=(15, 20))
+
+for i, col in enumerate(numeric_columns, 1):
+    plt.subplot(3, 2, i)
+    plt.plot(data.index, data[col], alpha=0.75)
+    plt.title(f'Time Series of {col}')
+    plt.xlabel('Datetime')
+    plt.ylabel(col)
+
+plt.tight_layout()
+plt.show()
+
+```
+# Let's proceed with the seasonal decomposition of the time series 
+```{python}
+from statsmodels.tsa.seasonal import STL
+
+# Decompose the time series for 'g_n'
+stl_g_n = STL(data['g_n'].dropna(), seasonal=13).fit()
+trend_g_n = stl_g_n.trend
+seasonal_g_n = stl_g_n.seasonal
+residual_g_n = stl_g_n.resid
+
+# Plot the decomposed components for 'g_n'
+plt.figure(figsize=(12, 8))
+
+plt.subplot(4, 1, 1)
+plt.plot(data['g_n'], label='Original', color='blue')
+plt.title('STL Decomposition of g_n')
+plt.legend()
+
+plt.subplot(4, 1, 2)
+plt.plot(trend_g_n, label='Trend', color='red')
+plt.legend()
+
+plt.subplot(4, 1, 3)
+plt.plot(seasonal_g_n, label='Seasonality', color='green')
+plt.legend()
+
+plt.subplot(4, 1, 4)
+plt.plot(residual_g_n, label='Residual', color='orange')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+```
