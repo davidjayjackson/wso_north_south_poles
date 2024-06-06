@@ -247,10 +247,44 @@ data['datetime'] = pd.to_datetime(data['Ymd'] + ' ' + data['hhmm'])
 
 # Set the datetime column as the index
 data.set_index('datetime', inplace=True)
-
-# Display the first few rows to confirm the changes
-data.head()
 ```
+
+# Resample the data to a daily frequency and forward fill any missing values
+```{python}
+# Select only the numeric columns
+data_numeric = data[numeric_columns]
+
+# Resample the data to a daily frequency and forward fill any missing values
+data_daily = data_numeric.resample('D').mean().ffill()
+```
+# Test Plot
+```{python}
+# Decompose the time series for each numeric column
+for col in numeric_columns:
+    if col in data.columns:
+        stl = STL(data_daily[col].dropna(), seasonal=13).fit()
+        trend = stl.trend
+        seasonal = stl.seasonal
+        residual = stl.resid
+
+        # Plot the decomposed components
+        plt.figure(figsize=(12, 8))
+        plt.subplot(4, 1, 1)
+        plt.plot(data_daily[col], label='Original', color='blue')
+        plt.title(f'STL Decomposition of {col}')
+        plt.legend(fontsize='large')
+        plt.subplot(4, 1, 2)
+        plt.plot(trend, label='Trend', color='red')
+        plt.legend(fontsize='large')
+        plt.subplot(4, 1, 3)
+        plt.plot(seasonal, label='Seasonality', color='green')
+        plt.legend(fontsize='large')
+        plt.subplot(4, 1, 4)
+        plt.plot(residual, label='Residual', color='orange')
+        plt.legend(fontsize='large')
+        plt.tight_layout()
+        plt.show()
+        ```
 # Next, let's plot the time series for key numeric variables (g_n, g_s, a, R_n, R_s, Rr) to identify trends and patterns over time.
 ```{python}
 # Plot the time series for key numeric variables
@@ -280,9 +314,9 @@ residual_g_n = stl_g_n.resid """
 
 # Plot the decomposed components for 'g_n'
 ```{python}
-""" plt.figure(figsize=(12, 8))
+# plt.figure(figsize=(12, 8))
 
-plt.subplot(4, 1, 1)
+""" plt.subplot(4, 1, 1)
 plt.plot(data['g_n'], label='Original', color='blue')
 plt.title('STL Decomposition of g_n')
 plt.legend()
@@ -301,4 +335,36 @@ plt.legend()
 
 plt.tight_layout()
 plt.show() """
+```
+# Decompose the time series for 'g_s' after resampling
+```{python}
+""" 
+stl_g_s = STL(data_daily['g_s'].dropna(), seasonal=13).fit()
+trend_g_s = stl_g_s.trend
+seasonal_g_s = stl_g_s.seasonal
+residual_g_s = stl_g_s.resid
+
+# Plot the decomposed components for 'g_s'
+plt.figure(figsize=(12, 8))
+
+plt.subplot(4, 1, 1)
+plt.plot(data_daily['g_s'], label='Original', color='blue')
+plt.title('STL Decomposition of g_s')
+plt.legend()
+
+plt.subplot(4, 1, 2)
+plt.plot(trend_g_s, label='Trend', color='red')
+plt.legend()
+
+plt.subplot(4, 1, 3)
+plt.plot(seasonal_g_s, label='Seasonality', color='green')
+plt.legend()
+
+plt.subplot(4, 1, 4)
+plt.plot(residual_g_s, label='Residual', color='orange')
+plt.legend()
+
+plt.tight_layout()
+plt.show() """
+
 ```
