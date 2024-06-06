@@ -1,9 +1,15 @@
 ---
 title: New and Improved Solar Polar Analysis
+format:
+  html:
+    fig-width: 8
+    fig-height: 6
+    code-fold: true
+    
 jupyter: python3
-date: 2024-06-04
+date: 2024-06-06
 author: David J Jackson
-format: html
+
 ---
 
 # Load the libraries
@@ -103,7 +109,7 @@ skewness_kurtosis
 # Create histograms for each numeric column
 numeric_columns = ['g_n', 'g_s', 'a', 'R_n', 'R_s', 'Rr']
 
-plt.figure(figsize=(15, 10))
+# plt.figure(figsize=(15, 10))
 
 for i, col in enumerate(numeric_columns, 1):
     plt.subplot(2, 3, i)
@@ -121,7 +127,7 @@ The histograms confirm that the distributions of the numeric columns are relativ
 The boxplots show that the data is generally spread out with some potential outliers, which is consistent with the negative kurtosis values indicating flatter distributions.
 ```{python}
 # Create boxplots for each numeric column
-plt.figure(figsize=(15, 10))
+# plt.figure(figsize=(15, 10))
 
 for i, col in enumerate(numeric_columns, 1):
     plt.subplot(2, 3, i)
@@ -148,7 +154,7 @@ g_s and a (-0.948)
 correlation_matrix = data[numeric_columns].corr()
 
 # Display the correlation matrix as a heatmap
-plt.figure(figsize=(10, 8))
+# plt.figure(figsize=(10, 8))
 plt.imshow(correlation_matrix, cmap='coolwarm', interpolation='none')
 plt.colorbar()
 plt.xticks(range(len(correlation_matrix.columns)), correlation_matrix.columns, rotation=90)
@@ -162,7 +168,7 @@ correlation_matrix
 ```
 # Create scatter plots for high positive correlations
 ```{python}
-plt.figure(figsize=(15, 10))
+# plt.figure(figsize=(15, 10))
 
 # Scatter plot for 'a' and 'Rr'
 plt.subplot(2, 2, 1)
@@ -190,7 +196,7 @@ plt.show()
 ```
 ```{python}
 # Create scatter plots for high negative correlations
-plt.figure(figsize=(15, 10))
+# plt.figure(figsize=(15, 10))
 
 # Scatter plot for 'R_s' and 'Rr'
 plt.subplot(2, 2, 1)
@@ -248,7 +254,7 @@ data.head()
 # Next, let's plot the time series for key numeric variables (g_n, g_s, a, R_n, R_s, Rr) to identify trends and patterns over time.
 ```{python}
 # Plot the time series for key numeric variables
-plt.figure(figsize=(15, 20))
+# plt.figure(figsize=(15, 20))
 
 for i, col in enumerate(numeric_columns, 1):
     plt.subplot(3, 2, i)
@@ -266,13 +272,15 @@ plt.show()
 from statsmodels.tsa.seasonal import STL
 
 # Decompose the time series for 'g_n'
-stl_g_n = STL(data['g_n'].dropna(), seasonal=13).fit()
+""" stl_g_n = STL(data['g_n'].dropna(), seasonal=13).fit()
 trend_g_n = stl_g_n.trend
 seasonal_g_n = stl_g_n.seasonal
-residual_g_n = stl_g_n.resid
+residual_g_n = stl_g_n.resid """
+```
 
 # Plot the decomposed components for 'g_n'
-plt.figure(figsize=(12, 8))
+```{python}
+""" plt.figure(figsize=(12, 8))
 
 plt.subplot(4, 1, 1)
 plt.plot(data['g_n'], label='Original', color='blue')
@@ -292,5 +300,5 @@ plt.plot(residual_g_n, label='Residual', color='orange')
 plt.legend()
 
 plt.tight_layout()
-plt.show()
+plt.show() """
 ```

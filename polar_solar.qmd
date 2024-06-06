@@ -12,13 +12,19 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 from scipy.signal import find_peaks
 import os
+import duckdb
 ```
 
 # Load the data
 
 ```{python}
-file_path = './WSO.csv'
-data = pd.read_csv(file_path)
+con = duckdb.connect(database = "wso.duckdb", read_only = False)
+data = con.execute("SELECT * FROM wso").df()
+data.dtypes
+```
+```{python}
+# Convert 'Ymd' and 'hhmm' columns to a single datetime column
+# data['datetime'] = pd.to_datetime(data['Ymd'] + ' ' + data['hhmm'])
 ```
 
 # Display the first few rows of the dataset
@@ -42,15 +48,15 @@ missing_values
 
 # Replace 'XXX' with NaN in the affected columns
 ```{python}
-data.replace('XXX', pd.NA, inplace=True)
+# data.replace('XXX', pd.NA, inplace=True)
 ```
 
 # Convert the affected columns to numeric types
 ```{python}
-data['g_n'] = pd.to_numeric(data['g_n'], errors='coerce')
-data['g_s'] = pd.to_numeric(data['g_s'], errors='coerce')
-data['R_n'] = pd.to_numeric(data['R_n'], errors='coerce')
-data['R_s'] = pd.to_numeric(data['R_s'], errors='coerce')
+# data['g_n'] = pd.to_numeric(data['g_n'], errors='coerce')
+# data['g_s'] = pd.to_numeric(data['g_s'], errors='coerce')
+# data['R_n'] = pd.to_numeric(data['R_n'], errors='coerce')
+# data['R_s'] = pd.to_numeric(data['R_s'], errors='coerce')
 ```
 
 # Generate summary statistics for the numeric columns
@@ -128,16 +134,16 @@ plt.yticks(range(len(correlation_matrix.columns)), correlation_matrix.columns)
 plt.title('Correlation Matrix Heatmap')
 plt.show()
 ```
-# Convert 'Ymd' and 'hhmm' columns to a single datetime column
+
 
 ```{python}
-data['datetime'] = pd.to_datetime(data['Ymd'] + ' ' + data['hhmm'])
+
 
 ```
 # Set the datetime column as the index
 
 ```{python}
-data.set_index('datetime', inplace=True)
+# data.set_index('datetime', inplace=True)
 ```
 # Resample the data to a daily frequency and forward fill any missing values
 
